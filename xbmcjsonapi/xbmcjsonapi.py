@@ -1,57 +1,40 @@
 #!/usr/bin/python
 
-import httplib
-import base64
 import string
 import json
-import urllib2
-import ConfigParser
 import os
+import ConfigParser
+import transports
 
 cache={}
 
 
-class xbmcjsonapitransport:
-    def __init__(self):
-        pass
-    def request(self,jsonrequest):
-        pass
-        
-
-class HTTPtransport(xbmcjsonapitransport):
-    json_introspect='{ "jsonrpc": "2.0", "method": "JSONRPC.Introspect", "id": 1 }'
-    config = ConfigParser.RawConfigParser()
-    config.read(os.path.expanduser('~') + '/.xbmcjsonapi')
-    username=config.get('http','username')
-    password=config.get('http','password')
-    port=config.get('http','port')
-    json_url=config.get('http','json_url')
-    host=config.get('http','host')
-
-    def __init__(self):
-      pass  
-        
-    def request(self, json_request):
-        # base64 encode the username and password
-        auth = base64.encodestring('%s:%s' % (self.username, self.password)).replace('\n', '')
-        url = 'http://%s:%s%s%s' % (self.host, self.port, self.json_url, json_request)
-        # write the Authorization header like: 'Basic base64encode(username + ':' + password)
-        headers = {'Authorization' : 'Basic %s' % auth, 
-                   'Content-Type' : 'application/json',
-                   'Content-Length' : '%s' % len(json_request)}
-    
-        # get the response
-        req = urllib2.Request( url, json_request, headers)
-        response = urllib2.urlopen(req)
-        json = response.read()
-        return json
 
 
 class xbmcjsonapi:
     def __init__(self):
         pass
 
-transport_instance=HTTPtransport()
+
+# config = ConfigParser.RawConfigParser()
+# config.read(os.path.expanduser('~') + '/.xbmcjsonapi')
+# username=config.get('http','username')
+# password=config.get('http','password')
+# port=config.get('http','port')
+# json_url=config.get('http','json_url')
+# host=config.get('http','host')
+
+config = ConfigParser.RawConfigParser()
+config.read(os.path.expanduser('~') + '/.xbmcjsonapi')
+port=config.get('tcp','port')
+buffer_size=config.get('tcp','buffer_size')
+host=config.get('tcp','host')
+
+
+
+# transport_instance=transports.HTTPtransport(**{'port': port, 'host': host, 'username': username, 'password': password})
+transport_instance=transports.TCPtransport(**{'port': port, 'host': host, 'buffer_size': buffer_size})
+
 
 def namespaces():
     namespaces=[]

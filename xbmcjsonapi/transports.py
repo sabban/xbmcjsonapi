@@ -46,10 +46,18 @@ class TCPtransport(xbmcjsonapitransport):
         self.buffer_size=kwargs['buffer_size']
 
     def request(self, json_request):
+        braces=0
+        json=''
         s = socket.socket(socket.AF_INET, 
                           socket.SOCK_STREAM)
         s.connect((self.host, int(self.port)))
         s.send(json_request)
-        json=s.recv(int(self.buffer_size))
-        print json
+        json=s.recv(int(1))
+        braces=json.count('{')
+        braces=braces-json.count('}')
+        while braces!=0:
+            tmp=s.recv(int(self.buffer_size))
+            json=json+tmp.strip('\n')
+            braces=braces+tmp.count('{')
+            braces=braces-tmp.count('}')
         return json

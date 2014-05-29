@@ -66,7 +66,7 @@ for namespace in namespaces():
             if kwargs=={}:
                 json_request=json_request+'}'
             else:
-                json_request=json_request+json.dumps(kwargs)+'}'
+                json_request=json_request + ',' + json.dumps(kwargs)[1:-1]+'}'
             return transport_instance.request(json_request)
             """ % (function_name, cache[key]['description'], cache[key]['params'], cache[key]['returns'], namespace, function_name)
             exec(s)

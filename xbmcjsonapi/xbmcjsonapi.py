@@ -8,55 +8,64 @@ import transports
 
 cache={}
 
-
-
-
 class xbmcjsonapi:
-    def __init__(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        self.type_transport = kwargs.get('type_transport', "TCP")
+        self.port = kwargs.get('port', 9090)
+        self.host = kwargs.get('host', "localhost")
+        self.username = kwargs.get('username', "username")
+        self.password = kwargs.get('password', "password")
+        self.buffer_size = kwargs.get('buffer_size', 1024)
+        if self.type_transport == 'TCP':
+            self.transport_instance=transports.TCPtransport(**{'port': self.port, 'host': self.host, 'buffer_size': self.buffer_size})
+        if self.type_transport == 'HTTP':
+            self.transport_instance=transports.HTTPtransport(**{'port': self.port, 'host': self.host, 'username': self.username, 'password': self.password})
+        cache=json.loads(self.transport_instance.request(self.transport_instance.json_introspect))['result']['methods']
+        xbmcjsonapi_create_subclasses(self)
 
+    def namespaces(self):
+        namespaces=[]
+        for method in json.loads(self.transport_instance.request(self.transport_instance.json_introspect))['result']['methods']:
+            if method.split('.')[0] not in namespaces:
+                namespaces.append(method.split('.')[0])
+        return namespaces
 
-# config = ConfigParser.RawConfigParser()
-# config.read(os.path.expanduser('~') + '/.xbmcjsonapi')
-# username=config.get('http','username')
-# password=config.get('http','password')
-# port=config.get('http','port')
-# json_url=config.get('http','json_url')
-# host=config.get('http','host')
+    def parameters(self):
+        return {'type_transport': self.type_transport,
+                'port' : self.port,
+                'host' : self.host,
+                'username' : self.username,
+                'password' : self.password,
+                'buffer_size' : self.buffer_size}
 
-config = ConfigParser.RawConfigParser()
-config.read(os.path.expanduser('~') + '/.xbmcjsonapi')
-port=config.get('tcp','port')
-buffer_size=config.get('tcp','buffer_size')
-host=config.get('tcp','host')
-
-
-
-# transport_instance=transports.HTTPtransport(**{'port': port, 'host': host, 'username': username, 'password': password})
-transport_instance=transports.TCPtransport(**{'port': port, 'host': host, 'buffer_size': buffer_size})
-
-
-def namespaces():
-    namespaces=[]
-    for method in json.loads(transport_instance.request(transport_instance.json_introspect))['result']['methods']:
-        if method.split('.')[0] not in namespaces:
-            namespaces.append(method.split('.')[0])
-    return namespaces
-
-
-for namespace in namespaces():
-    s = """class %s(xbmcjsonapi):
+def xbmcjsonapi_create_subclasses(instance):
+    namespaces = instance.namespaces()
+    for namespace in namespaces:
+        s = """class %s(object):
     \"\"\"XBMC %s namespace. \"\"\"
-    pass
-    """%(namespace,namespace)
-    exec (s)
+    def __init__(self, *args, **kwargs):
+        self.type_transport = kwargs.get('type_transport', "TCP")
+        self.port = kwargs.get('port', 9090)
+        self.host = kwargs.get('host', "localhost")
+        self.username = kwargs.get('username', "username")
+        self.password = kwargs.get('password', "password")
+        self.buffer_size = kwargs.get('buffer_size', 1024)
+        if self.type_transport == 'TCP':
+            self.transport_instance=transports.TCPtransport(**{'port': self.port, 'host': self.host, 'buffer_size': self.buffer_size})
+        if self.type_transport == 'HTTP':
+            self.transport_instance=transports.HTTPtransport(**{'port': self.port, 'host': self.host, 'username': self.username, 'password': self.password})
 
-cache=json.loads(transport_instance.request(transport_instance.json_introspect))['result']['methods']
-for namespace in namespaces():
-    for key in cache:
-        if namespace in key:
-            function_name=key.split('.')[1]
-            s="""def %s(self, *args, **kwargs):
+    """%(namespace,namespace)
+        exec (s)
+        s="""setattr(xbmcjsonapi,'%s',%s)""" % (namespace, namespace)
+        exec (s)
+    
+    cache=json.loads(instance.transport_instance.request(instance.transport_instance.json_introspect))['result']['methods']
+    for namespace in namespaces:
+        for key in cache:
+            if namespace in key:
+                function_name=key.split('.')[1]
+                s="""def %s(self, *args, **kwargs):
             \"\"\"
             Description : %s 
             Parameters : %s
@@ -67,8 +76,8 @@ for namespace in namespaces():
                 json_request=json_request+'}'
             else:
                 json_request=json_request + ',' + json.dumps(kwargs)[1:-1]+'}'
-            return transport_instance.request(json_request)
+            return self.transport_instance.request(json_request)
             """ % (function_name, cache[key]['description'], cache[key]['params'], cache[key]['returns'], namespace, function_name)
-            exec(s)
-            s="""setattr(%s,'%s',%s)""" % (namespace, function_name, function_name)
-            exec(s)
+                exec(s)
+                s="""setattr(%s,'%s',%s)""" % (namespace, function_name, function_name)
+                exec(s)

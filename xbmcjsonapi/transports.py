@@ -50,7 +50,7 @@ class TCPtransport(xbmcjsonapitransport):
         json=''
         s = socket.socket(socket.AF_INET, 
                           socket.SOCK_STREAM)
-        s.connect((self.host, int(self.port)))
+        s.connect((socket.gethostbyname(self.host), int(self.port)))
         s.send(json_request)
         json=s.recv(int(1))
         braces=json.count('{')
@@ -60,4 +60,6 @@ class TCPtransport(xbmcjsonapitransport):
             json=json+tmp.strip('\n')
             braces=braces+tmp.count('{')
             braces=braces-tmp.count('}')
+        s.shutdown(socket.SHUT_RDWR)
+        s.close()
         return json

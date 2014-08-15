@@ -44,7 +44,6 @@ class notifications(TCPtransport):
                 string=string+tmp.strip('\n')
                 braces=braces+tmp.count('{')
                 braces=braces-tmp.count('}')
-            print json.loads(string)
             self.json_list.append(json.loads(string))
 
     def last_notifications(self):

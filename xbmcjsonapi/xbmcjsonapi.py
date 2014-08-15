@@ -3,7 +3,6 @@
 import string
 import json
 import os
-import ConfigParser
 import transports
 
 cache={}
